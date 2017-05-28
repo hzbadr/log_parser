@@ -34,6 +34,15 @@ defmodule LogParser do
     |> Enum.count
   end
 
+  def parse_with_task do
+    File.stream!(@path)
+    |> Enum.filter(&Task.async(fn ->
+      list?(&1) || answer?(&1)
+    end))
+    |> Enum.map(&Task.await/1)
+    |> Enum.to_list
+  end
+
   def parse do
     File.stream!(@path, [], 128 * 4096)
     |> Enum.reduce([], fn lines, acc ->
@@ -45,20 +54,11 @@ defmodule LogParser do
     |> Enum.count
   end
 
-  def filter(lines) do
+  defp filter(lines) do
     String.split(lines, "\n")
     |> Enum.filter(fn(line)->
       list?(line) || answer?(line)
     end)
-  end
-
-  def parse_with_task do
-    File.stream!(@path)
-    |> Enum.filter(&Task.async(fn ->
-      list?(&1) || answer?(&1)
-    end))
-    |> Enum.map(&Task.await/1)
-    |> Enum.to_list
   end
 
   defp list?(line) do
